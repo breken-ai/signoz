@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from 'tests/test-utils';
+import { fireEvent, render, screen, waitFor } from 'tests/test-utils';
 
 import MarkdownContent from '../components/MarkdownContent/MarkdownContent';
 import { loadLanguage } from '../../../utils/syntaxLanguages';
@@ -207,5 +207,107 @@ describe('code block copy button', () => {
 		render(<MarkdownContent>{'run `npm i` now'}</MarkdownContent>);
 
 		expect(screen.queryByTestId('text-panel-copy-code')).not.toBeInTheDocument();
+	});
+});
+
+describe('MarkdownContent — interactive task lists', () => {
+	const source = ['- [ ] first', '- [x] second'].join('\n');
+
+	it('renders task checkboxes disabled without the capability', () => {
+		render(<MarkdownContent>{source}</MarkdownContent>);
+
+		const boxes = screen.getAllByRole('checkbox');
+		expect(boxes).toHaveLength(2);
+		boxes.forEach((box) => expect(box).toBeDisabled());
+	});
+
+	it('renders them enabled, and checked to match the source', () => {
+		render(
+			<MarkdownContent interactive={{ source, onChangeSource: jest.fn() }}>
+				{source}
+			</MarkdownContent>,
+		);
+
+		const [first, second] = screen.getAllByRole('checkbox');
+		expect(first).toBeEnabled();
+		expect(first).not.toBeChecked();
+		expect(second).toBeChecked();
+	});
+
+	it('checking one rewrites its marker in the source', () => {
+		const onChangeSource = jest.fn();
+		render(
+			<MarkdownContent interactive={{ source, onChangeSource }}>
+				{source}
+			</MarkdownContent>,
+		);
+
+		fireEvent.click(screen.getAllByRole('checkbox')[0]);
+
+		expect(onChangeSource).toHaveBeenCalledWith(
+			['- [x] first', '- [x] second'].join('\n'),
+		);
+	});
+
+	it('unchecking one rewrites only that marker', () => {
+		const onChangeSource = jest.fn();
+		render(
+			<MarkdownContent interactive={{ source, onChangeSource }}>
+				{source}
+			</MarkdownContent>,
+		);
+
+		fireEvent.click(screen.getAllByRole('checkbox')[1]);
+
+		expect(onChangeSource).toHaveBeenCalledWith(
+			['- [ ] first', '- [ ] second'].join('\n'),
+		);
+	});
+
+	it('maps a click back through an expanded variable', () => {
+		const onChangeSource = jest.fn();
+		const withVariable = ['- [ ] $env first', '- [ ] second'].join('\n');
+		render(
+			<MarkdownContent interactive={{ source: withVariable, onChangeSource }}>
+				{['- [ ] production first', '- [ ] second'].join('\n')}
+			</MarkdownContent>,
+		);
+
+		fireEvent.click(screen.getAllByRole('checkbox')[1]);
+
+		expect(onChangeSource).toHaveBeenCalledWith(
+			['- [ ] $env first', '- [x] second'].join('\n'),
+		);
+	});
+
+	it('saves nothing when a variable injected a marker of its own', () => {
+		const onChangeSource = jest.fn();
+		render(
+			<MarkdownContent interactive={{ source: '- [ ] $tasks', onChangeSource }}>
+				{['- [ ] one', '- [ ] two'].join('\n')}
+			</MarkdownContent>,
+		);
+
+		fireEvent.click(screen.getAllByRole('checkbox')[0]);
+
+		expect(onChangeSource).not.toHaveBeenCalled();
+	});
+
+	it('ignores a task marker inside a fence', () => {
+		const onChangeSource = jest.fn();
+		const fenced = ['```', '- [ ] fenced', '```', '', '- [ ] real'].join('\n');
+		render(
+			<MarkdownContent interactive={{ source: fenced, onChangeSource }}>
+				{fenced}
+			</MarkdownContent>,
+		);
+
+		expect(screen.getAllByRole('checkbox')).toHaveLength(1);
+
+		fireEvent.click(screen.getByRole('checkbox'));
+
+		expect(onChangeSource).toHaveBeenCalledWith(
+			fenced.replace('- [ ] real', '- [x] real'),
+		);
 	});
 });

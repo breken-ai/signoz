@@ -168,6 +168,10 @@
 	accent-color: var(--md-link);
 }
 
+.content.content input[type='checkbox']:not(:disabled) {
+	cursor: pointer;
+}
+
 .content.content a {
 	color: var(--md-link);
 	text-decoration: var(--md-link-decoration);
