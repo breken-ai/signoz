@@ -14,7 +14,7 @@ function PanelHeaderSection({
 		<ConfigSwitch
 			testId="panel-header-hide"
 			title="Hide header"
-			description="Drop the title strip on the dashboard; hovering the panel brings it back for drag and actions."
+			description="Drop the title strip on the dashboard; hovering the panel shows controls for drag and actions."
 			value={value?.hide === true}
 			onChange={(hide): void => onChange({ ...value, hide })}
 		/>
