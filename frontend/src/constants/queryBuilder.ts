@@ -363,6 +363,7 @@ export enum PANEL_TYPES {
 	BAR = 'bar',
 	PIE = 'pie',
 	HISTOGRAM = 'histogram',
+	TEXT = 'text',
 	EMPTY_WIDGET = 'EMPTY_WIDGET',
 }
 
@@ -610,6 +611,8 @@ export const PANEL_TYPES_INITIAL_QUERY: Record<PANEL_TYPES, Query> = {
 	[PANEL_TYPES.BAR]: initialQueriesMap.metrics,
 	[PANEL_TYPES.PIE]: initialQueriesMap.metrics,
 	[PANEL_TYPES.HISTOGRAM]: initialQueriesMap.metrics,
+	// No query of its own: a text panel renders an authored body.
+	[PANEL_TYPES.TEXT]: initialQueriesMap.metrics,
 	[PANEL_TYPES.EMPTY_WIDGET]: initialQueriesMap.metrics,
 };
 
