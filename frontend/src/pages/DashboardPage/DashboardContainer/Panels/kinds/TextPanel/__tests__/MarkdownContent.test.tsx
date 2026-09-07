@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from 'tests/test-utils';
 
-import MarkdownContent from '../MarkdownContent';
-import { loadLanguage } from '../syntaxLanguages';
+import MarkdownContent from '../components/MarkdownContent/MarkdownContent';
+import { loadLanguage } from '../../../utils/syntaxLanguages';
 
 describe('MarkdownContent', () => {
 	describe('security', () => {
@@ -18,7 +18,9 @@ describe('MarkdownContent', () => {
 
 		it('renders raw HTML as text rather than markup', () => {
 			const { container } = render(
-				<MarkdownContent>{'<b>bold</b> and <img src="x" onerror="alert(1)">'}</MarkdownContent>,
+				<MarkdownContent>
+					{'<b>bold</b> and <img src="x" onerror="alert(1)">'}
+				</MarkdownContent>,
 			);
 
 			expect(container.querySelector('b')).toBeNull();
@@ -103,10 +105,14 @@ describe('MarkdownContent', () => {
 			);
 
 			await waitFor(() => {
-				expect(container.querySelector('.token.keyword')).toHaveTextContent('const');
+				expect(container.querySelector('.token.keyword')).toHaveTextContent(
+					'const',
+				);
 			});
 			expect(container.querySelector('.token.number')).toHaveTextContent('1');
-			expect(container.querySelector('.token.comment')).toHaveTextContent('// note');
+			expect(container.querySelector('.token.comment')).toHaveTextContent(
+				'// note',
+			);
 		});
 
 		it('shows the source verbatim while the language is still loading', () => {
@@ -114,7 +120,9 @@ describe('MarkdownContent', () => {
 				<MarkdownContent>{'```rust\nfn main() {}\n```'}</MarkdownContent>,
 			);
 
-			expect(container.querySelector('pre code')).toHaveTextContent('fn main() {}');
+			expect(container.querySelector('pre code')).toHaveTextContent(
+				'fn main() {}',
+			);
 			expect(container.querySelector('.token')).toBeNull();
 		});
 
@@ -124,7 +132,9 @@ describe('MarkdownContent', () => {
 				<MarkdownContent>{'```sql\nSELECT 1\n```'}</MarkdownContent>,
 			);
 
-			expect(container.querySelector('.token.keyword')).toHaveTextContent('SELECT');
+			expect(container.querySelector('.token.keyword')).toHaveTextContent(
+				'SELECT',
+			);
 		});
 
 		it('tags the code element with the language', () => {
@@ -140,7 +150,9 @@ describe('MarkdownContent', () => {
 				<MarkdownContent>{'```promql\nrate(foo[5m])\n```'}</MarkdownContent>,
 			);
 
-			expect(container.querySelector('pre code')).toHaveTextContent('rate(foo[5m])');
+			expect(container.querySelector('pre code')).toHaveTextContent(
+				'rate(foo[5m])',
+			);
 			expect(container.querySelector('.token')).toBeNull();
 		});
 
@@ -194,8 +206,6 @@ describe('code block copy button', () => {
 	it('renders no copy control on inline code', () => {
 		render(<MarkdownContent>{'run `npm i` now'}</MarkdownContent>);
 
-		expect(
-			screen.queryByTestId('text-panel-copy-code'),
-		).not.toBeInTheDocument();
+		expect(screen.queryByTestId('text-panel-copy-code')).not.toBeInTheDocument();
 	});
 });

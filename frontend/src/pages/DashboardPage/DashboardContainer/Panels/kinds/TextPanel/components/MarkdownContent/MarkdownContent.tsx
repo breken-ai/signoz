@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-import CodeBlock from './CodeBlock';
+import CodeBlock from '../CodeBlock/CodeBlock';
 
 import styles from './MarkdownContent.module.scss';
 
