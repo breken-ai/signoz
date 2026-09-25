@@ -3,6 +3,8 @@ package resourcefilter
 import (
 	"context"
 	"fmt"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/SigNoz/signoz/pkg/clickhousesql"
 	"github.com/SigNoz/signoz/pkg/errors"
@@ -12,21 +14,50 @@ import (
 	"github.com/huandu/go-sqlbuilder"
 )
 
+// labelsLikeValue prepares a value for a LIKE hint on the labels column. The
+// collector stores labels as json.Marshal output, which escapes quotes,
+// backslashes, <, >, &, control characters, U+2028/U+2029 and invalid UTF-8,
+// so each such character becomes a % wildcard instead of a literal.
+func labelsLikeValue(value string) string {
+	var b strings.Builder
+	for i := 0; i < len(value); {
+		r, size := utf8.DecodeRuneInString(value[i:])
+		switch {
+		case r == utf8.RuneError && size == 1,
+			r < 0x20, r == '"', r == '\\', r == '<', r == '>', r == '&',
+			r == '\u2028', r == '\u2029':
+			b.WriteByte('%')
+		default:
+			b.WriteString(value[i : i+size])
+		}
+		i += size
+	}
+	return b.String()
+}
+
 func valueForIndexFilter(op qbtypes.FilterOperator, key *telemetrytypes.TelemetryFieldKey, value any) any {
+	hintValue := func(v any) string {
+		formatted := querybuilder.FormatValueForContains(v)
+		if op == qbtypes.FilterOperatorNotEqual || op == qbtypes.FilterOperatorNotIn {
+			// a wider pattern under NOT LIKE would drop more rows
+			return formatted
+		}
+		return labelsLikeValue(formatted)
+	}
 	switch v := value.(type) {
 	case []any:
 		// assuming array will always be for in and not in
 		values := make([]string, 0, len(v))
 		for _, v := range v {
-			values = append(values, fmt.Sprintf(`%%%s":"%s%%`, key.Name, querybuilder.FormatValueForContains(v)))
+			values = append(values, fmt.Sprintf(`%%%s":"%s%%`, key.Name, hintValue(v)))
 		}
 		return values
 	default:
 		// format to string for anything else as we store resource values as string
 		if op == qbtypes.FilterOperatorEqual || op == qbtypes.FilterOperatorNotEqual {
-			return fmt.Sprintf(`%%%s":"%s%%`, key.Name, querybuilder.FormatValueForContains(v))
+			return fmt.Sprintf(`%%%s":"%s%%`, key.Name, hintValue(v))
 		}
-		return fmt.Sprintf(`%%%s%%%s%%`, key.Name, querybuilder.FormatValueForContains(v))
+		return fmt.Sprintf(`%%%s%%%s%%`, key.Name, hintValue(v))
 	}
 }
 
