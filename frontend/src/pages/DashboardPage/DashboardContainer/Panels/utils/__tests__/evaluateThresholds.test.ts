@@ -32,6 +32,17 @@ describe('doesValueMatchThreshold', () => {
 		);
 	});
 
+	it('converts a per-second panel value into a per-minute threshold unit', () => {
+		// 3 counts/sec is 180 counts/min, which is above 120 counts/min.
+		expect(
+			doesValueMatchThreshold(3, threshold({ value: 120, unit: 'cpm' }), 'cps'),
+		).toBe(true);
+		// 1 count/sec is 60 counts/min, which is not above 120 counts/min.
+		expect(
+			doesValueMatchThreshold(1, threshold({ value: 120, unit: 'cpm' }), 'cps'),
+		).toBe(false);
+	});
+
 	it('compares the raw value when units are in different categories', () => {
 		// 'bytes' vs 'ms' belong to different categories, so conversion is invalid
 		// and the comparison falls back to the raw value (150 > 100).
